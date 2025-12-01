@@ -63,7 +63,6 @@ TimeMS DateTime_CurrentUTC(void) {
 	ksys_date_bcd_t date = _ksys_get_date();
 	ksys_time_bcd_t time = _ksys_get_time();
 	
-	// Конвертируем BCD в нормальные числа
 	int year   = ((date.year >> 4) * 10 + (date.year & 0x0F)) + 2000;
 	int month  = (date.month >> 4) * 10 + (date.month & 0x0F);
 	int day    = (date.day >> 4) * 10 + (date.day & 0x0F);
@@ -71,7 +70,6 @@ TimeMS DateTime_CurrentUTC(void) {
 	int minute = (time.min >> 4) * 10 + (time.min & 0x0F);
 	int second = (time.sec >> 4) * 10 + (time.sec & 0x0F);
 	
-	// Простой подсчёт миллисекунд (не учитывает часовые пояса)
 	TimeMS ms = 0;
 	ms += (year - 1970) * 365 * 24 * 60 * 60 * 1000ULL;
 	ms += (month - 1) * 30 * 24 * 60 * 60 * 1000ULL;
@@ -203,7 +201,7 @@ cc_result File_Length(cc_file file, cc_uint32* len) {
 *--------------------------------------------------------Threading--------------------------------------------------------*
 *#########################################################################################################################*/
 void Thread_Sleep(cc_uint32 milliseconds) {
-	_ksys_delay(milliseconds / 10); // KolibriOS delay в сотых долях секунды
+	_ksys_delay(milliseconds / 10);
 }
 
 /*########################################################################################################################*

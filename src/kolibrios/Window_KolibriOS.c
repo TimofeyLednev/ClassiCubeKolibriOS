@@ -21,8 +21,8 @@ void Window_PreInit(void) {
 void Window_Init(void) {
     ksys_pos_t screen = _ksys_screen_size();
 
-    DisplayInfo.Width  = screen.x;
-    DisplayInfo.Height = screen.y;
+    DisplayInfo.Width  = screen.x + 1;
+    DisplayInfo.Height = screen.y + 1;
     DisplayInfo.Depth  = 24;
     DisplayInfo.ScaleX = 1.0f;
     DisplayInfo.ScaleY = 1.0f;
@@ -31,33 +31,37 @@ void Window_Init(void) {
 }
 
 void Window_Free(void) {
-    //
     if (buffer24_static) {
         Mem_Free(buffer24_static);
         buffer24_static = NULL;
     }
 }
 
+static void RefreshWindowBounds(void) {
+    ksys_thread_t thread_info;
+    _ksys_thread_info(&thread_info, KSYS_THIS_SLOT);
+    
+    Window_Main.Width  = thread_info.clientwidth;
+    Window_Main.Height = thread_info.clientheight;
+}
+
 static void DoCreateWindow(int width, int height) {
     if (Window_Main.Exists) return;
 
-    //
     ksys_pos_t screen = _ksys_screen_size();
-    win_pos_x = screen.x/2 - width/2;
-    win_pos_y = screen.y/2 - height/2;
+    win_pos_x = (screen.x + 1) / 2 - width / 2;
+    win_pos_y = (screen.y + 1) / 2 - height / 2;
 
-    _ksys_set_event_mask(0x27);
+    _ksys_set_event_mask(KSYS_EVM_REDRAW | KSYS_EVM_KEY | KSYS_EVM_BUTTON | KSYS_EVM_MOUSE);
     _ksys_create_window(win_pos_x, win_pos_y, width, height, "ClassiCube", 0x000000, 0x34);
 
-    Window_Main.Width    = width;
-    Window_Main.Height   = height;
-    Window_Main.Focused  = true;
     Window_Main.Exists   = true;
+    Window_Main.Focused  = true;
     Window_Main.UIScaleX = DEFAULT_UI_SCALE_X;
     Window_Main.UIScaleY = DEFAULT_UI_SCALE_Y;
 
-    //
-    Window_SetSize(width, height);
+    RefreshWindowBounds();
+    Window_SetSize(Window_Main.Width, Window_Main.Height);
 }
 
 void Window_Create2D(int width, int height) { DoCreateWindow(width, height); }
@@ -84,23 +88,20 @@ int Window_IsObscured(void) { return 0; }
 void Window_Show(void) { }
 
 void Window_SetSize(int width, int height) {
-    //
     _ksys_change_window(win_pos_x, win_pos_y, width, height);
-    Window_Main.Width  = width;
-    Window_Main.Height = height;
+    
+    RefreshWindowBounds();
 
-    //
     if (buffer24_static) {
         Mem_Free(buffer24_static);
         buffer24_static = NULL;
     }
 
-    int pixel_count = width * height;
+    int pixel_count = Window_Main.Width * Window_Main.Height;
     buffer24_size = pixel_count * 3;
     buffer24_static = (cc_uint8*)Mem_Alloc(buffer24_size, 1, "static 24bpp buffer");
 
     if (!buffer24_static) {
-        //
         Platform_LogConst("ERROR: Failed to allocate static 24bpp buffer!");
         Window_RequestClose();
     }
@@ -125,12 +126,17 @@ static int MapKey(int scancode) {
         case KSYS_SCANCODE_TAB: return CCKEY_TAB;
         case KSYS_SCANCODE_BACKSPACE: return CCKEY_BACKSPACE;
         case KSYS_SCANCODE_ESC: return CCKEY_ESCAPE;
+        
         case 72: return CCKEY_UP;
         case 80: return CCKEY_DOWN;
         case 75: return CCKEY_LEFT;
         case 77: return CCKEY_RIGHT;
+        
         case KSYS_SCANCODE_LSHIFT: return CCKEY_LSHIFT;
-        case KSYS_SCANCODE_LCTRL: return CCKEY_LCTRL;
+        case KSYS_SCANCODE_RSHIFT: return CCKEY_RSHIFT;
+        case 29: return CCKEY_LCTRL;
+        case 56: return CCKEY_LALT;
+        
         case KSYS_SCANCODE_F1: return CCKEY_F1;
         case KSYS_SCANCODE_F2: return CCKEY_F2;
         case KSYS_SCANCODE_F3: return CCKEY_F3;
@@ -143,10 +149,13 @@ static int MapKey(int scancode) {
         case KSYS_SCANCODE_F10: return CCKEY_F10;
         case KSYS_SCANCODE_F11: return CCKEY_F11;
         case KSYS_SCANCODE_F12: return CCKEY_F12;
-
-        //
+        
         case 71: return CCKEY_HOME;
         case 79: return CCKEY_END;
+        case 73: return CCKEY_PAGEUP;
+        case 81: return CCKEY_PAGEDOWN;
+        case 82: return CCKEY_INSERT;
+        case 83: return CCKEY_DELETE;
     }
     return 0;
 }
@@ -162,10 +171,12 @@ void Window_ProcessEvents(float delta) {
 
         case KSYS_EVENT_REDRAW: {
             _ksys_start_draw();
-            //
             _ksys_create_window(win_pos_x, win_pos_y,
                                  Window_Main.Width, Window_Main.Height,
                                  "ClassiCube", 0x000000, 0x34);
+            
+            RefreshWindowBounds();
+            Event_RaiseVoid(&WindowEvents.Resized);
             Event_RaiseVoid(&WindowEvents.RedrawNeeded);
             _ksys_end_draw();
             break;
@@ -231,13 +242,11 @@ cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 }
 
 void Window_AllocFramebuffer(struct Bitmap* bmp, int width, int height) {
-    //
     bmp->scan0  = (BitmapCol*)Mem_Alloc(width * height, BITMAPCOLOR_SIZE, "window pixels");
     bmp->width  = width;
     bmp->height = height;
 
     if (!bmp->scan0) {
-        //
         Platform_LogConst("ERROR: Failed to allocate 32bpp SoftGPU buffer!");
         Window_RequestClose();
     }
@@ -248,7 +257,7 @@ void Window_DrawFramebuffer(Rect2D r, struct Bitmap* bmp) {
 
     int width  = bmp->width;
     int height = bmp->height;
-    cc_uint8* buffer24 = buffer24_static; //
+    cc_uint8* buffer24 = buffer24_static;
 
     int buf_idx = 0;
     for (int y = 0; y < height; y++) {
@@ -257,17 +266,13 @@ void Window_DrawFramebuffer(Rect2D r, struct Bitmap* bmp) {
         for (int x = 0; x < width; x++) {
             BitmapCol col = row[x];
 
-            //
             buffer24[buf_idx++] = BitmapCol_B(col);
             buffer24[buf_idx++] = BitmapCol_G(col);
             buffer24[buf_idx++] = BitmapCol_R(col);
         }
     }
 
-    //
     _ksys_draw_bitmap(buffer24, 0, 0, width, height);
-
-    //
 }
 
 void Window_FreeFramebuffer(struct Bitmap* bmp) {

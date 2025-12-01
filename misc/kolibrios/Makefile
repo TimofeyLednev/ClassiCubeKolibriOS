@@ -12,8 +12,7 @@ CC          := kos32-gcc
 LD          := kos32-ld
 OBJCOPY     := kos32-objcopy
 
-KOS32_SDK_DIR := /c/kolibri/contrib/sdk
-export PATH := $(PATH):/home/autobuild/tools/win32/bin:/MinGW/bin
+KOS32_SDK_DIR := ../..
 
 #---------------------------------------------------------------------------------
 # Paths
