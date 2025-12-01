@@ -312,6 +312,8 @@ amiga:
 	$(MAKE) -f misc/amiga/Makefile
 atari_st:
 	$(MAKE) -f misc/atari_st/Makefile
+kolibrios:
+	$(MAKE) -f misc/kolibrios/Makefile
 
 # Cleans up all build .o files
 clean:
