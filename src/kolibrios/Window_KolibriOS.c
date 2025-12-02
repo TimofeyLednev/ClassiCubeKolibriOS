@@ -5,6 +5,7 @@
 #include "../Options.h"
 #include "../Errors.h"
 #include <sys/ksys.h>
+#include <stdio.h>
 
 static int win_pos_x = 100;
 static int win_pos_y = 100;
@@ -28,6 +29,8 @@ void Window_Init(void) {
     DisplayInfo.ScaleY = 1.0f;
 
     Input.Sources = INPUT_SOURCE_NORMAL;
+    
+    _ksys_set_key_input_mode(KSYS_KEY_INPUT_MODE_SCANC);
 }
 
 void Window_Free(void) {
@@ -48,12 +51,17 @@ static void RefreshWindowBounds(void) {
 static void DoCreateWindow(int width, int height) {
     if (Window_Main.Exists) return;
 
+    uint32_t skin_height = _ksys_get_skin_height();
+    
+    int window_width = width + 10;
+    int window_height = height + skin_height + 5;
+
     ksys_pos_t screen = _ksys_screen_size();
-    win_pos_x = (screen.x + 1) / 2 - width / 2;
-    win_pos_y = (screen.y + 1) / 2 - height / 2;
+    win_pos_x = (screen.x + 1) / 2 - window_width / 2;
+    win_pos_y = (screen.y + 1) / 2 - window_height / 2;
 
     _ksys_set_event_mask(KSYS_EVM_REDRAW | KSYS_EVM_KEY | KSYS_EVM_BUTTON | KSYS_EVM_MOUSE);
-    _ksys_create_window(win_pos_x, win_pos_y, width, height, "ClassiCube", 0x000000, 0x34);
+    _ksys_create_window(win_pos_x, win_pos_y, window_width, window_height, "ClassiCube", 0x000000, 0x34);
 
     Window_Main.Exists   = true;
     Window_Main.Focused  = true;
@@ -100,11 +108,6 @@ void Window_SetSize(int width, int height) {
     int pixel_count = Window_Main.Width * Window_Main.Height;
     buffer24_size = pixel_count * 3;
     buffer24_static = (cc_uint8*)Mem_Alloc(buffer24_size, 1, "static 24bpp buffer");
-
-    if (!buffer24_static) {
-        Platform_LogConst("ERROR: Failed to allocate static 24bpp buffer!");
-        Window_RequestClose();
-    }
 }
 
 void Window_RequestClose(void) {
@@ -113,43 +116,30 @@ void Window_RequestClose(void) {
 }
 
 static int MapKey(int scancode) {
-    if (scancode >= KSYS_SCANCODE_A && scancode <= KSYS_SCANCODE_Z) {
-        return 'A' + (scancode - KSYS_SCANCODE_A);
+    static const int aScancode[] = {
+        INPUT_NONE, CCKEY_ESCAPE, '1', '2', '3', '4', '5', '6',
+        '7', '8', '9', '0', CCKEY_MINUS, CCKEY_EQUALS, CCKEY_BACKSPACE, CCKEY_TAB,
+        'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I',
+        'O', 'P', CCKEY_LBRACKET, CCKEY_RBRACKET, CCKEY_ENTER, CCKEY_LCTRL, 'A', 'S',
+        'D', 'F', 'G', 'H', 'J', 'K', 'L', CCKEY_SEMICOLON,
+        CCKEY_QUOTE, CCKEY_TILDE, CCKEY_LSHIFT, CCKEY_BACKSLASH, 'Z', 'X', 'C', 'V',
+        'B', 'N', 'M', CCKEY_COMMA, CCKEY_PERIOD, CCKEY_SLASH, CCKEY_RSHIFT, CCKEY_KP_MULTIPLY,
+        CCKEY_LALT, CCKEY_SPACE, CCKEY_CAPSLOCK, CCKEY_F1, CCKEY_F2, CCKEY_F3, CCKEY_F4, CCKEY_F5,
+        CCKEY_F6, CCKEY_F7, CCKEY_F8, CCKEY_F9, CCKEY_F10, CCKEY_NUMLOCK, CCKEY_SCROLLLOCK, CCKEY_KP7,
+        CCKEY_KP8, CCKEY_KP9, CCKEY_KP_MINUS, CCKEY_KP4, CCKEY_KP5, CCKEY_KP6, CCKEY_KP_PLUS, CCKEY_KP1,
+        CCKEY_KP2, CCKEY_KP3, CCKEY_KP0, CCKEY_KP_DECIMAL, INPUT_NONE, INPUT_NONE, INPUT_NONE, CCKEY_F11,
+        CCKEY_F12
+    };
+    
+    if (scancode < sizeof(aScancode) / sizeof(int)) {
+        return aScancode[scancode];
     }
-    if (scancode >= KSYS_SCANCODE_0 && scancode <= KSYS_SCANCODE_9) {
-        return '0' + (scancode - KSYS_SCANCODE_0);
-    }
-
+    
     switch(scancode) {
-        case KSYS_SCANCODE_SPACE: return CCKEY_SPACE;
-        case KSYS_SCANCODE_ENTER: return CCKEY_ENTER;
-        case KSYS_SCANCODE_TAB: return CCKEY_TAB;
-        case KSYS_SCANCODE_BACKSPACE: return CCKEY_BACKSPACE;
-        case KSYS_SCANCODE_ESC: return CCKEY_ESCAPE;
-        
         case 72: return CCKEY_UP;
-        case 80: return CCKEY_DOWN;
         case 75: return CCKEY_LEFT;
         case 77: return CCKEY_RIGHT;
-        
-        case KSYS_SCANCODE_LSHIFT: return CCKEY_LSHIFT;
-        case KSYS_SCANCODE_RSHIFT: return CCKEY_RSHIFT;
-        case 29: return CCKEY_LCTRL;
-        case 56: return CCKEY_LALT;
-        
-        case KSYS_SCANCODE_F1: return CCKEY_F1;
-        case KSYS_SCANCODE_F2: return CCKEY_F2;
-        case KSYS_SCANCODE_F3: return CCKEY_F3;
-        case KSYS_SCANCODE_F4: return CCKEY_F4;
-        case KSYS_SCANCODE_F5: return CCKEY_F5;
-        case KSYS_SCANCODE_F6: return CCKEY_F6;
-        case KSYS_SCANCODE_F7: return CCKEY_F7;
-        case KSYS_SCANCODE_F8: return CCKEY_F8;
-        case KSYS_SCANCODE_F9: return CCKEY_F9;
-        case KSYS_SCANCODE_F10: return CCKEY_F10;
-        case KSYS_SCANCODE_F11: return CCKEY_F11;
-        case KSYS_SCANCODE_F12: return CCKEY_F12;
-        
+        case 80: return CCKEY_DOWN;
         case 71: return CCKEY_HOME;
         case 79: return CCKEY_END;
         case 73: return CCKEY_PAGEUP;
@@ -157,7 +147,8 @@ static int MapKey(int scancode) {
         case 82: return CCKEY_INSERT;
         case 83: return CCKEY_DELETE;
     }
-    return 0;
+    
+    return INPUT_NONE;
 }
 
 void Window_ProcessEvents(float delta) {
@@ -184,12 +175,22 @@ void Window_ProcessEvents(float delta) {
 
         case KSYS_EVENT_KEY: {
             ksys_oskey_t key = _ksys_get_key();
-            int cckey = MapKey(key.code);
-
-            if (cckey) Input_Set(cckey, true);
-
-            if (key.code >= 32 && key.code < 127) {
-                Event_RaiseInt(&InputEvents.Press, (cc_unichar)key.code);
+            
+            cc_bool is_release = (key.code >= 128);
+            int actual_scancode = is_release ? (key.code - 128) : key.code;
+            
+            int cckey = MapKey(actual_scancode);
+            
+            char debug_msg[128];
+            sprintf(debug_msg, "Key: scan=%d%s -> cckey=%d", 
+                    key.code, is_release ? " REL" : " PRESS", cckey);
+            Platform_Log(debug_msg, String_Length(debug_msg));
+            
+            if (cckey) {
+                Input_Set(cckey, !is_release);
+                Platform_LogConst(is_release ? " -> RELEASED\n" : " -> PRESSED\n");
+            } else {
+                Platform_LogConst(" -> IGNORED\n");
             }
             break;
         }
@@ -245,11 +246,6 @@ void Window_AllocFramebuffer(struct Bitmap* bmp, int width, int height) {
     bmp->scan0  = (BitmapCol*)Mem_Alloc(width * height, BITMAPCOLOR_SIZE, "window pixels");
     bmp->width  = width;
     bmp->height = height;
-
-    if (!bmp->scan0) {
-        Platform_LogConst("ERROR: Failed to allocate 32bpp SoftGPU buffer!");
-        Window_RequestClose();
-    }
 }
 
 void Window_DrawFramebuffer(Rect2D r, struct Bitmap* bmp) {
