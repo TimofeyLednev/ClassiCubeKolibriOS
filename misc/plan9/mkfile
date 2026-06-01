@@ -1,0 +1,43 @@
+#$objtype/mkfile
+
+# ClassiCube — Plan 9 (9front) build file.
+#
+# Build, from the repository root, with:
+#     mk -f misc/plan9/mkfile
+#
+# The native kencc toolchain is selected automatically via the
+# </$objtype/mkfile include above, which defines $CC (e.g. 6c), $LD
+# (e.g. 6l) and $O (the object suffix, e.g. 6 on amd64).
+#
+# The Plan 9 platform/window backends live in  src/plan9/  and are gated
+# behind  CC_BUILD_PLAN9 , selected by the  -DPLAT_PLAN9  flag below
+# (see src/Core.h). Sources for other platforms self-disable via their
+# own #if CC_BUILD_* guards, so compiling the whole src/ tree is safe:
+# they reduce to empty objects and cost nothing at link time.
+
+TARG=ClassiCube
+BIN=$home/bin/$objtype
+
+CFILES=`{ls src/*.c src/plan9/*.c}
+OFILES=${CFILES:%.c=%.$O}
+
+# -FTVw is the standard 9front kencc flag set (strict prototype, type,
+# and unused-variable checks) — the same flags the Plan 9 source tree
+# builds with. -DPLAT_PLAN9 selects the Plan 9 backends in src/Core.h.
+CFLAGS=-FTVw -DPLAT_PLAN9 -I.
+
+default:V: $TARG
+
+$TARG: $OFILES
+	$LD -o $TARG $OFILES
+
+%.$O: %.c
+	$CC $CFLAGS -o $target $stem.c
+
+clean:V:
+	rm -f src/*.[$OS] src/plan9/*.[$OS] $TARG
+
+install:V: $TARG
+	cp $TARG $BIN/$TARG
+
+nuke:V: clean

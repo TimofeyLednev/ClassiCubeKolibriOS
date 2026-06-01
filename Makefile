@@ -325,6 +325,8 @@ amiga:
 	$(MAKE) -f misc/amiga/Makefile
 atari_st:
 	$(MAKE) -f misc/atari_st/Makefile
+plan9:
+	mk -f misc/plan9/mkfile
 ios:
 	$(MAKE) -f misc/ios/Makefile
 android:
