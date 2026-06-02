@@ -2,7 +2,7 @@
 #if defined CC_BUILD_PLAN9
 
 #include "../_WindowBase.h"
-#include "../String.h"
+#include "../String_.h"
 #include "../Funcs.h"
 #include "../Bitmap.h"
 #include "../Options.h"
