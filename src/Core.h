@@ -710,6 +710,7 @@ typedef cc_uint8  cc_bool;
     #define DEFAULT_SSL_BACKEND CC_SSL_BACKEND_BEARSSL
 #elif defined PLAT_PLAN9
 	#define CC_BUILD_PLAN9
+	#define CC_BUILD_COOPTHREADED
 	#define CC_BUILD_NOMUSIC
 	#define CC_BUILD_NOSOUNDS
 	#undef  CC_BUILD_FREETYPE
