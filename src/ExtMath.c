@@ -96,6 +96,25 @@ float sqrtf(float x) {
 		fp_x = SquareRoot12(fp_x);
 		return (float)fp_x / (1 << 12);
 	}
+#elif defined CC_BUILD_PLAN9
+	/* Plan 9 simple implementations */
+	float Math_AbsF(float x)  { return x < 0 ? -x : x; }
+	
+	float Math_SqrtF(float x) {
+		if (x < 0) return 0;
+		if (x == 0) return 0;
+		
+		float guess = x;
+		float prev;
+		int iterations = 20;
+		
+		while (iterations--) {
+			prev = guess;
+			guess = (guess + x / guess) / 2.0f;
+			if (guess == prev) break;
+		}
+		return guess;
+	}
 #elif defined __GNUC__ || defined NXDK
 	/* Defined in .h using builtins */
 #elif defined __TINYC__ || defined CC_BUILD_ATARIOS || defined CC_BUILD_AMIGA
