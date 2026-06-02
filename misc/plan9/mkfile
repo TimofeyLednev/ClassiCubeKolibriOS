@@ -24,7 +24,10 @@ OFILES=${CFILES:%.c=%.$O}
 # -FTVw is the standard 9front kencc flag set (strict prototype, type,
 # and unused-variable checks) — the same flags the Plan 9 source tree
 # builds with. -DPLAT_PLAN9 selects the Plan 9 backends in src/Core.h.
-CFLAGS=-FTVw -DPLAT_PLAN9 -I.
+# -p invokes the full ANSI C preprocessor (cpp): the built-in kencc
+# preprocessor only handles #define/#include/#undef/#ifdef/#ifndef/#line
+# and chokes on the #if / #elif used throughout src/Core.h and friends.
+CFLAGS=-p -FTVw -DPLAT_PLAN9 -I.
 
 default:V: $TARG
 

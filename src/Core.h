@@ -84,6 +84,27 @@ Copyright 2014-2025 ClassiCube | Licensed under BSD-3
 #elif __MWERKS__
 	/* TODO: Is there actual attribute support for CC_API etc somewhere? */
 	#define CC_BIG_ENDIAN
+#elif defined PLAT_PLAN9
+	/* Native Plan 9 kencc toolchain (6c/8c): defines none of the
+	   compiler macros above. Note that kencc's "long" is 32-bit even on
+	   amd64, so cc_uintptr must be a wider type to hold a pointer. */
+	typedef signed char      cc_int8;
+	typedef signed short     cc_int16;
+	typedef signed int       cc_int32;
+	typedef signed long long cc_int64;
+
+	typedef unsigned char      cc_uint8;
+	typedef unsigned short     cc_uint16;
+	typedef unsigned int       cc_uint32;
+	typedef unsigned long long cc_uint64;
+	typedef unsigned long long cc_uintptr;
+	#define CC_HAS_TYPES
+
+	#define CC_INLINE
+	#define CC_NOINLINE
+	#define CC_API
+	#define CC_VAR
+	#define CC_HAS_MISC
 #endif
 
 /* Only used on GBA to store some variables in EWRAM instead of IWRAM */
@@ -91,6 +112,9 @@ Copyright 2014-2025 ClassiCube | Licensed under BSD-3
 
 #ifdef _MSC_VER
 	#define CC_ALIGNED(x) __declspec(align(x))
+#elif defined PLAT_PLAN9
+	/* kencc has no alignment attribute */
+	#define CC_ALIGNED(x)
 #else
 	#define CC_ALIGNED(x) __attribute__((aligned(x)))
 #endif
