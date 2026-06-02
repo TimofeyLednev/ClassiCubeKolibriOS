@@ -30,9 +30,7 @@
 const cc_result ReturnCode_FileShareViolation = PLAN9_ERR_BASE + 1;
 const cc_result ReturnCode_FileNotFound       = PLAN9_ERR_BASE + 2;
 const cc_result ReturnCode_DirectoryExists    = PLAN9_ERR_BASE + 3;
-const cc_result ReturnCode_SocketInProgess    = PLAN9_ERR_BASE + 4;
-const cc_result ReturnCode_SocketWouldBlock   = PLAN9_ERR_BASE + 5;
-const cc_result ReturnCode_SocketDropped      = PLAN9_ERR_BASE + 6;
+const cc_result ReturnCode_PathNotFound       = PLAN9_ERR_BASE + 7;
 
 const char* Platform_AppNameSuffix = " Plan9";
 cc_uint8 Platform_Flags = PLAT_FLAG_SINGLE_PROCESS;
@@ -134,7 +132,7 @@ void Platform_DecodePath(cc_string* dst, const cc_filepath* path) {
 
 void Directory_GetCachePath(cc_string* path) { }
 
-cc_result Directory_Create(const cc_filepath* path) {
+cc_result Directory_Create2(const cc_filepath* path) {
 	int fd = create(path->buffer, OREAD, DMDIR | 0775);
 	if (fd < 0) return Plat_Err();
 	close(fd);
