@@ -319,7 +319,7 @@ void Gui_ShowPauseMenu(void) {
 }
 
 #define BARS_VB_COUNT 4 * 2
-static void ShowCinematicBars() {
+static void ShowCinematicBars(void) {
 	struct VertexColoured* v;
 	int screenWidth  = Window_Main.Width;
 	int screenHeight = Window_Main.Height;
