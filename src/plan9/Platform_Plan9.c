@@ -278,7 +278,9 @@ cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
 	return false;
 }
 
-void Platform_Init(void) { }
+void Platform_Init(void) {
+	setfcr(getfcr() & ~(FPINVAL | FPZDIV | FPOVFL));
+}
 
 cc_result Platform_Encrypt(const void* data, int len, cc_string* dst) {
 	return ERR_NOT_SUPPORTED;
